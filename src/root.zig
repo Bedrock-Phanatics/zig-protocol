@@ -10,17 +10,22 @@ pub const typed = @import("registry/typed.zig");
 pub const PacketId = @import("registry/generated_packet_id.zig").PacketId;
 pub const generated_packets = @import("packets/generated.zig");
 pub const BlockPosition = @import("types/block_position.zig").BlockPosition;
+pub const ChunkPosition = @import("types/position.zig").ChunkPosition;
+pub const SubChunkPosition = @import("types/position.zig").SubChunkPosition;
+pub const Rgba = @import("types/colour.zig").Rgba;
 pub const Vec2f = @import("types/vector.zig").Vec2f;
 pub const Vec3f = @import("types/vector.zig").Vec3f;
 pub const packets = struct {
     pub const play_status = @import("packets/play_status.zig");
     pub const network_settings = @import("packets/network_settings.zig");
     pub const move_player = @import("packets/move_player.zig");
+    pub const resource_pack = @import("packets/resource_pack.zig");
 };
 pub const codecs = struct {
     pub const play_status = @import("codecs/play_status.zig");
     pub const network_settings = @import("codecs/network_settings.zig");
     pub const move_player = @import("codecs/move_player.zig");
+    pub const resource_pack = @import("codecs/resource_pack.zig");
 };
 test {
     _ = @import("tests/primitives.zig");
@@ -29,4 +34,5 @@ test {
     _ = @import("tests/typed.zig");
     _ = @import("tests/nbt.zig");
     _ = @import("tests/compression.zig");
+    _ = @import("tests/resource_pack.zig");
 }

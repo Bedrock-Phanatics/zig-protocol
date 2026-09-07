@@ -3,6 +3,8 @@ const DecodeLimits = @import("limits.zig").DecodeLimits;
 const DecodeError = @import("errors.zig").DecodeError;
 const vector = @import("../types/vector.zig");
 const BlockPosition = @import("../types/block_position.zig").BlockPosition;
+const position = @import("../types/position.zig");
+const colour = @import("../types/colour.zig");
 
 pub const Reader = struct {
     input: []const u8,
@@ -164,6 +166,31 @@ pub const Reader = struct {
             out[i + 8] = src[15 - i];
         }
         return out;
+    }
+    pub fn readRemaining(self: *Reader) []const u8 {
+        const value = self.input[self.cursor..];
+        self.cursor = self.input.len;
+        return value;
+    }
+    pub fn readChunkPosition(self: *Reader) DecodeError!position.ChunkPosition {
+        return .{ .x = try self.readVarI32(), .z = try self.readVarI32() };
+    }
+    pub fn readSubChunkPosition(self: *Reader) DecodeError!position.SubChunkPosition {
+        return .{ .x = try self.readI32(), .y = try self.readI32(), .z = try self.readI32() };
+    }
+    pub fn readSoundPosition(self: *Reader) DecodeError!vector.Vec3f {
+        const p = try self.readBlockPosition();
+        return .{ .x = @as(f32, @floatFromInt(p.x)) / 8.0, .y = @as(f32, @floatFromInt(p.y)) / 8.0, .z = @as(f32, @floatFromInt(p.z)) / 8.0 };
+    }
+    pub fn readByteFloat(self: *Reader) DecodeError!f32 {
+        return @as(f32, @floatFromInt(try self.readU8())) * (360.0 / 256.0);
+    }
+    pub fn readRgba(self: *Reader) DecodeError!colour.Rgba {
+        return @bitCast(try self.readU32());
+    }
+    pub fn readBeArgb(self: *Reader) DecodeError!colour.Rgba {
+        const value = try self.readU32Be();
+        return .{ .r = @truncate(value >> 8), .g = @truncate(value >> 16), .b = @truncate(value >> 24), .a = @truncate(value) };
     }
     pub fn finish(self: *const Reader) DecodeError!void {
         if (!self.end()) return error.TrailingData;

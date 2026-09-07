@@ -38,3 +38,30 @@ test "limits and UTF-8 are enforced without allocation" {
     var invalid = try root.Reader.init(&.{ 2, 0xc3, 0x28 }, .{});
     try std.testing.expectError(error.InvalidUtf8, invalid.readString());
 }
+test "chunk subchunk sound byte-float and colour fixtures" {
+    var storage: [128]u8 = undefined;
+    var w = root.Writer.init(&storage);
+    try w.writeChunkPosition(.{ .x = -2, .z = 300 });
+    try w.writeSubChunkPosition(.{ .x = 1, .y = -2, .z = 3 });
+    try w.writeSoundPosition(.{ .x = 1.25, .y = -2.5, .z = 3.0 });
+    try w.writeByteFloat(-90.0);
+    try w.writeRgba(.{ .r = 1, .g = 2, .b = 3, .a = 4 });
+    try w.writeBeArgb(.{ .r = 1, .g = 2, .b = 3, .a = 4 });
+
+    var r = try root.Reader.init(w.written(), .{});
+    try std.testing.expectEqual(root.ChunkPosition{ .x = -2, .z = 300 }, try r.readChunkPosition());
+    try std.testing.expectEqual(root.SubChunkPosition{ .x = 1, .y = -2, .z = 3 }, try r.readSubChunkPosition());
+    try std.testing.expectEqual(root.Vec3f{ .x = 1.25, .y = -2.5, .z = 3.0 }, try r.readSoundPosition());
+    try std.testing.expectEqual(@as(f32, 270.0), try r.readByteFloat());
+    try std.testing.expectEqual(root.Rgba{ .r = 1, .g = 2, .b = 3, .a = 4 }, try r.readRgba());
+    try std.testing.expectEqual(root.Rgba{ .r = 1, .g = 2, .b = 3, .a = 4 }, try r.readBeArgb());
+    try r.finish();
+}
+
+test "float-backed compact encodings reject non-finite values" {
+    var storage: [32]u8 = undefined;
+    var w = root.Writer.init(&storage);
+    try std.testing.expectError(error.InvalidValue, w.writeByteFloat(std.math.nan(f32)));
+    try std.testing.expectError(error.InvalidValue, w.writeSoundPosition(.{ .x = std.math.inf(f32), .y = 0, .z = 0 }));
+    try std.testing.expectEqual(@as(usize, 0), w.written().len);
+}

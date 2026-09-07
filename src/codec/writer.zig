@@ -1,6 +1,8 @@
 const std = @import("std");
 const vector = @import("../types/vector.zig");
 const BlockPosition = @import("../types/block_position.zig").BlockPosition;
+const position = @import("../types/position.zig");
+const colour = @import("../types/colour.zig");
 
 pub const Writer = struct {
     buffer: []u8,
@@ -132,5 +134,35 @@ pub const Writer = struct {
             wire[i + 8] = v[15 - i];
         }
         try self.writeRaw(&wire);
+    }
+    pub fn writeChunkPosition(self: *Writer, v: position.ChunkPosition) !void {
+        try self.writeVarI32(v.x);
+        try self.writeVarI32(v.z);
+    }
+    pub fn writeSubChunkPosition(self: *Writer, v: position.SubChunkPosition) !void {
+        try self.writeI32(v.x);
+        try self.writeI32(v.y);
+        try self.writeI32(v.z);
+    }
+    fn soundCoordinate(v: f32) error{InvalidValue}!i32 {
+        if (!std.math.isFinite(v)) return error.InvalidValue;
+        const scaled = @as(f64, v) * 8.0;
+        if (scaled < @as(f64, @floatFromInt(std.math.minInt(i32))) or scaled > @as(f64, @floatFromInt(std.math.maxInt(i32)))) return error.InvalidValue;
+        return @intFromFloat(scaled);
+    }
+    pub fn writeSoundPosition(self: *Writer, v: vector.Vec3f) !void {
+        try self.writeBlockPosition(.{ .x = try soundCoordinate(v.x), .y = try soundCoordinate(v.y), .z = try soundCoordinate(v.z) });
+    }
+    pub fn writeByteFloat(self: *Writer, v: f32) !void {
+        if (!std.math.isFinite(v)) return error.InvalidValue;
+        const normalized = @mod(v, 360.0);
+        try self.writeU8(@intFromFloat(normalized / (360.0 / 256.0)));
+    }
+    pub fn writeRgba(self: *Writer, v: colour.Rgba) !void {
+        try self.writeU32(@bitCast(v));
+    }
+    pub fn writeBeArgb(self: *Writer, v: colour.Rgba) !void {
+        const value = @as(u32, v.a) | @as(u32, v.r) << 8 | @as(u32, v.g) << 16 | @as(u32, v.b) << 24;
+        try self.writeU32Be(value);
     }
 };
