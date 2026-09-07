@@ -1,4 +1,4 @@
-# bedrock-protocol
+# zig-protocol
 
 Allocation-free Zig 0.16.0 Minecraft: Bedrock Edition protocol foundations targeting protocol 2192.
 
