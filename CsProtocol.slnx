@@ -1,6 +1,0 @@
-<Solution>
-  <Project Path="src/CsProtocol/CsProtocol.csproj" />
-  <Project Path="../cs-nbt/src/CsNbt/CsNbt.csproj" />
-  <Project Path="tests/CsProtocol.Tests/CsProtocol.Tests.csproj" />
-  <Project Path="benchmarks/CsProtocol.Benchmarks/CsProtocol.Benchmarks.csproj" />
-</Solution>

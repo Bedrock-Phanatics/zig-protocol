@@ -1,49 +1,32 @@
-# CsProtocol
+# bedrock-protocol
 
-CsProtocol is an allocation-conscious Minecraft: Bedrock Edition packet-codec foundation for .NET 10. The current codec targets protocol **2192 / Minecraft 1.26.50**, based primarily on CloudburstMC Protocol 3.0 and cross-checked against Gophertunnel 1.26.45 where that older reference still applies.
+Allocation-free Zig 0.16.0 Minecraft: Bedrock Edition protocol foundations targeting protocol 2192.
 
-## Current capabilities
+## Safety and ownership
 
-- bounds-checked little-endian primitives, canonical ZigZag VarInts, strict UTF-8, vectors, positions, GUIDs, and `cs-nbt` integration;
-- immutable, thread-safe per-version packet registries;
-- lossless borrowed-memory `RawPacket` forwarding for every legal 10-bit packet ID;
-- typed codecs for the handshake/control hot path: play status, disconnect, text, move player, network settings, request network settings, and network stack latency;
-- Bedrock `0xfe` batch framing with packet-count, packet-size, batch-size, string, collection, and decompression limits;
-- raw DEFLATE and no-compression batches;
-- Bedrock AES-256-CTR plus rolling SHA-256 checksums, checked against an independent Go standard-library vector;
-- malformed-input regressions and a deterministic random-input stress pass.
+`Reader`, generic packet envelopes, strings, byte arrays, generated packet payloads, and NBT document slices borrow their input. They must not outlive or mutate the backing buffer. `Writer` and DEFLATE APIs use caller-provided storage. Core decode paths do not allocate or retain global mutable state, so codec instances require no locks and may be used concurrently when their buffers are independent.
 
-The typed packet model is intentionally not advertised as complete yet. Packets without typed registrations are preserved byte-for-byte as `RawPacket`, which is useful for transparent proxies but does not provide semantic field access. Snappy batches also currently throw `NotSupportedException` instead of silently using an incompatible codec.
+Centralized `DecodeLimits` bound packets, batches, decompressed data, packet counts, strings, arrays, NBT bytes, and NBT nesting. Malformed values return errors; external-input validation does not rely on Debug-only checks.
 
-## Example
+## Coverage
 
-```csharp
-using System.Buffers;
-using CsProtocol;
-using CsProtocol.Packets;
+- Canonical VarInt/VarLong and ZigZag, fixed little/big-endian integers, floats, booleans, UTF-8 strings, byte arrays, vectors, block positions, and Bedrock UUID byte order.
+- Lossless packet envelope forwarding across the complete legal 10-bit packet-ID domain.
+- Compile-time protocol-2192 ID catalog and 236 separately organized generated packet modules.
+- Typed codecs for the handshake/control baseline: Login, PlayStatus, both handshakes, Disconnect, SetTime, RemoveActor, MovePlayer, SetHealth, SetCommandsEnabled, SetDifficulty, RequestChunkRadius, ChunkRadiusUpdated, NetworkStackLatency, NetworkSettings, and RequestNetworkSettings.
+- Allocation-free Bedrock network-little-endian NBT structural validation.
+- Allocation-free batch iteration and bounded raw-DEFLATE decompression using Zig's standard library.
 
-BedrockCodec codec = ProtocolVersions.Current;
+Generated catalog modules not listed as typed codecs are borrowed opaque payload models. They support lossless forwarding but not semantic field access yet. Snappy, batch encryption, full NBT materialization/encoding, and semantic codecs for complex gameplay packets remain unsupported and must not be inferred from catalog presence.
 
-var output = new ArrayBufferWriter<byte>();
-codec.Encode(output, new PacketEnvelope(
-    new PacketHeader(115),
-    new NetworkStackLatencyPacket(123456789, NeedsResponse: true)));
-
-PacketEnvelope decoded = codec.Decode(output.WrittenMemory);
-```
-
-`RawPacket.Payload` borrows its input memory. The caller must keep that memory alive and unchanged until forwarding or copying it. Codec registries are safe to share across connections. `BatchEncryption` is connection-direction state and must be serialized by its owner; use separate instances for sending and receiving.
-
-## Validation
+## Commands
 
 ```console
-dotnet build CsProtocol.slnx --configuration Release
-dotnet test tests/CsProtocol.Tests --configuration Release
-dotnet run --project benchmarks/CsProtocol.Benchmarks --configuration Release
+zig fmt build.zig src benchmarks
+zig build test
+zig build test -Doptimize=ReleaseSafe
+zig build test -Doptimize=ReleaseFast
+zig build bench -Doptimize=ReleaseFast
 ```
 
-The lightweight benchmark harness avoids a runtime dependency on BenchmarkDotNet. Its numbers are diagnostic, not a substitute for representative end-to-end proxy profiling.
-
-## Scope
-
-RakNet transport, Xbox authentication, discovery, server lists, resource-pack storage, and proxy/session policy do not belong in this packet library. They should be layered on top. `cs-nbt` remains the NBT implementation for this ecosystem.
+Tests include canonical fixtures, malformed inputs, limits, full packet-ID forwarding, deterministic hostile-input stress, and a native `std.testing.fuzz` target.
