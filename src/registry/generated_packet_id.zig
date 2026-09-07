@@ -1,4 +1,4 @@
-// Generated from protocol/schema/bedrock-2192.json.
+// Generated from the protocol 2192 base schema and overlay.
 pub const PacketId = enum(u10) {
     login = 1,
     play_status = 2,

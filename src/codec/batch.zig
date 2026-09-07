@@ -9,7 +9,7 @@ pub const Iterator = struct {
     count: usize = 0,
     pub fn init(payload: []const u8, limits: Limits) !Iterator {
         if (payload.len > limits.max_decompressed_batch_bytes) return error.LimitExceeded;
-        return .{ .reader = try Reader.init(payload, limits) };
+        return .{ .reader = try Reader.initWithInputLimit(payload, limits, limits.max_decompressed_batch_bytes) };
     }
     pub fn next(s: *Iterator) !?[]const u8 {
         if (s.reader.end()) return null;

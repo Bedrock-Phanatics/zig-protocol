@@ -5,6 +5,19 @@ pub const Tag = enum(u8) { end = 0, byte = 1, short = 2, int = 3, long = 4, floa
 /// The returned slice borrows the reader input and contains the exact encoded document.
 pub fn readDocument(r: *Reader) ![]const u8 {
     const start = r.cursor;
+    const original_input = r.input;
+    const available = original_input.len - start;
+    const allowed = @min(available, r.limits.max_nbt_bytes);
+    const budget_limited = allowed < available;
+    r.input = original_input[0 .. start + allowed];
+    defer r.input = original_input;
+
+    return readDocumentWithinBudget(r, start) catch |err| {
+        if (err == error.EndOfStream and budget_limited) return error.LimitExceeded;
+        return err;
+    };
+}
+fn readDocumentWithinBudget(r: *Reader, start: usize) ![]const u8 {
     const tag = std.enums.fromInt(Tag, try r.readU8()) orelse return error.InvalidNbt;
     if (tag == .end) return error.InvalidNbt;
     _ = try readNbtString(r);

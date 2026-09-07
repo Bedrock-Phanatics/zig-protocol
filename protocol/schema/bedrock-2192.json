@@ -2512,8 +2512,7 @@
       "name": "RequestChunkRadius",
       "id": 69,
       "directions": [
-        "client",
-        "server"
+        "client"
       ],
       "fields": [
         {

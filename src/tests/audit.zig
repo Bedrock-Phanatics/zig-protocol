@@ -54,3 +54,21 @@ fn fuzzParser(_: void, smith: *std.testing.Smith) !void {
     try std.testing.expect(r.cursor <= r.input.len);
     _ = root.packet.decode(bytes[0..len], r.limits) catch {};
 }
+test "batch total limit is independent from per-packet limit" {
+    const limits: root.DecodeLimits = .{ .max_packet_bytes = 4, .max_decompressed_batch_bytes = 16 };
+    const framed = [_]u8{ 4, 1, 2, 3, 4, 4, 5, 6, 7, 8 };
+    var it = try root.batch.Iterator.init(&framed, limits);
+    try std.testing.expectEqualSlices(u8, &.{ 1, 2, 3, 4 }, (try it.next()).?);
+    try std.testing.expectEqualSlices(u8, &.{ 5, 6, 7, 8 }, (try it.next()).?);
+    try std.testing.expectEqual(@as(?[]const u8, null), try it.next());
+
+    var oversized = try root.batch.Iterator.init(&.{ 5, 1, 2, 3, 4, 5 }, limits);
+    try std.testing.expectError(error.LimitExceeded, oversized.next());
+}
+
+test "invalid reader checkpoint is rejected without changing cursor" {
+    var r = try root.Reader.init(&.{0x2a}, .{});
+    try std.testing.expectError(error.InvalidCheckpoint, r.restore(2));
+    try std.testing.expectEqual(@as(usize, 0), r.cursor);
+    try std.testing.expectEqual(@as(u8, 0x2a), try r.readU8());
+}

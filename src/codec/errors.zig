@@ -7,6 +7,7 @@ pub const DecodeError = error{
     LimitExceeded,
     InvalidEnum,
     InvalidPacketId,
+    InvalidCheckpoint,
     TrailingData,
 };
 

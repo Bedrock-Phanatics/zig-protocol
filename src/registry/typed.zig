@@ -21,6 +21,26 @@ pub const Packet = union(enum) {
     request_network_settings: @import("../packets/network_settings.zig").RequestNetworkSettingsPacket,
 };
 pub const Envelope = struct { header: Header, packet: Packet };
+fn packetId(packet: Packet) u10 {
+    return switch (packet) {
+        .login => 1,
+        .play_status => 2,
+        .server_to_client_handshake => 3,
+        .client_to_server_handshake => 4,
+        .disconnect => 5,
+        .set_time => 10,
+        .remove_actor => 14,
+        .move_player => 19,
+        .set_health => 42,
+        .set_commands_enabled => 59,
+        .set_difficulty => 60,
+        .request_chunk_radius => 69,
+        .chunk_radius_updated => 70,
+        .network_stack_latency => 115,
+        .network_settings => 143,
+        .request_network_settings => 193,
+    };
+}
 pub fn decode(input: []const u8, limits: Limits) !Envelope {
     var r = try Reader.init(input, limits);
     const h = try Header.fromWire(try r.readVarU32());
@@ -47,6 +67,7 @@ pub fn decode(input: []const u8, limits: Limits) !Envelope {
     return .{ .header = h, .packet = value };
 }
 pub fn encode(w: *Writer, e: Envelope) !void {
+    if (e.header.packet_id != packetId(e.packet)) return error.InvalidValue;
     try w.writeVarU32(e.header.toWire());
     switch (e.packet) {
         .login => |v| {

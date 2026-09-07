@@ -10,7 +10,10 @@ pub const Reader = struct {
     limits: DecodeLimits,
 
     pub fn init(input: []const u8, limits: DecodeLimits) DecodeError!Reader {
-        if (!limits.valid() or input.len > limits.max_packet_bytes) return error.LimitExceeded;
+        return initWithInputLimit(input, limits, limits.max_packet_bytes);
+    }
+    pub fn initWithInputLimit(input: []const u8, limits: DecodeLimits, max_input_bytes: usize) DecodeError!Reader {
+        if (!limits.valid() or input.len > max_input_bytes) return error.LimitExceeded;
         return .{ .input = input, .limits = limits };
     }
     pub inline fn remaining(self: *const Reader) usize {
@@ -22,8 +25,8 @@ pub const Reader = struct {
     pub inline fn checkpoint(self: *const Reader) usize {
         return self.cursor;
     }
-    pub fn restore(self: *Reader, mark: usize) void {
-        std.debug.assert(mark <= self.input.len);
+    pub fn restore(self: *Reader, mark: usize) DecodeError!void {
+        if (mark > self.input.len) return error.InvalidCheckpoint;
         self.cursor = mark;
     }
     pub fn take(self: *Reader, count: usize) DecodeError![]const u8 {
