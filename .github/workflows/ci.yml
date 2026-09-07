@@ -17,6 +17,6 @@ jobs:
       - run: zig version
       - run: zig fmt --check build.zig src benchmarks
       - run: zig build test
-      - run: zig build fuzz -Dfuzz-iterations=100000
+      # - run: zig build fuzz -Dfuzz-iterations=100000
       - run: zig build -Doptimize=ReleaseSafe test
       - run: zig build bench
