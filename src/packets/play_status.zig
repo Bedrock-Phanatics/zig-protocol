@@ -14,12 +14,12 @@ pub const PlayStatus = enum(i32) {
     login_failed_vanilla_editor = 9,
 };
 
-pub const PlayStatusPacket = struct {
+pub const Current = struct {
     pub const id: PacketId = .play_status;
     status: PlayStatus,
 };
 
 pub fn Shape(comptime protocol: Protocol) type {
     _ = protocol;
-    return PlayStatusPacket;
+    return Current;
 }

@@ -10,11 +10,13 @@ const PacketId = @import("generated_packet_id.zig").PacketId;
 const packets = struct {
     pub const login = @import("../packets/login.zig");
     pub const play_status = @import("../packets/play_status.zig");
+    pub const server_to_client_handshake = @import("../packets/server_to_client_handshake.zig");
 };
 
 const codecs = struct {
     pub const login = @import("../codecs/login.zig");
     pub const play_status = @import("../codecs/play_status.zig");
+    pub const server_to_client_handshake = @import("../codecs/server_to_client_handshake.zig");
 };
 
 pub const UnknownPacket = struct {
