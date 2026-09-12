@@ -1,3 +1,6 @@
+const Protocol = @import("../protocol.zig").Protocol;
+const PacketId = @import("../registry/generated_packet_id.zig").PacketId;
+
 pub const PlayStatus = enum(i32) {
     login_success = 0,
     login_failed_client = 1,
@@ -10,4 +13,13 @@ pub const PlayStatus = enum(i32) {
     login_failed_editor_vanilla = 8,
     login_failed_vanilla_editor = 9,
 };
-pub const PlayStatusPacket = struct { status: PlayStatus };
+
+pub const PlayStatusPacket = struct {
+    pub const id: PacketId = .play_status;
+    status: PlayStatus,
+};
+
+pub fn Shape(comptime protocol: Protocol) type {
+    _ = protocol;
+    return PlayStatusPacket;
+}
